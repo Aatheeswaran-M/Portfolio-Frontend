@@ -1,0 +1,114 @@
+.projects-wrapper {
+  padding: 1rem;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.projects-wrapper h2 {
+  font-size: 2rem;
+  font-weight: 700;
+ 
+  color: #00bcd4;
+}
+
+.underlineP {
+  width: 140px;
+  height: 4px;
+  background: linear-gradient(90deg, #00c6ff, #9333ea);
+  margin: 0 auto 15px auto;
+  border-radius: 4px;
+  position: relative;
+  top: 10px; 
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  margin-bottom: 2rem;
+}
+
+/* 3×3 Grid Layout */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.project-card {
+  background: #121212;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+}
+
+.thumbnail {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 2px solid #00bcd4;
+}
+
+.card-body {
+  padding: 1rem;
+  flex-grow: 1;
+}
+
+.title {
+  font-size: 1.2rem;
+  color: #00e5ff;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.card-meta {
+  padding: 1rem;
+  border-top: 1px solid #333;
+}
+
+.tech {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #7ef9ff;
+  font-size: 0.85rem;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  background: #00bcd4;
+  color: #000;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #00e5ff;
+}
+
+.btn.live {
+  background: #7ef9ff;
+}
+
+.loading {
+  color: white;
+  font-size: 1.2rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
