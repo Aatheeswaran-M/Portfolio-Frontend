@@ -6,6 +6,7 @@ import LightRays from "../Animations/Hero-bg/Hero-bg";
 import { FaLinkedin } from "react-icons/fa6";
 import { AiOutlineGithub } from "react-icons/ai";
 import { FaSquareInstagram } from "react-icons/fa6";
+import { FaWhatsapp } from "react-icons/fa"; // added WhatsApp icon
 
 function Profile() {
   const profileUrl = "https://portfolio-api-jie5.onrender.com/api/profile";
@@ -15,6 +16,11 @@ function Profile() {
   const [Bio, setBio] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // Replace with your WhatsApp number (country code + number, no + or dashes)
+  const whatsappNumber = "919994823277"; // e.g. 91 for India
+  const whatsappMessage = "Hi Aathees, I found your portfolio and would like to connect."; 
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+  
   useEffect(() => {
     const fetchdata = async () => {
       try {
@@ -33,17 +39,16 @@ function Profile() {
     setIsDownloading(true);
     try {
       const response = await fetch(resumeUrl);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch resume');
+      }
+      
       const data = await response.json();
       
       if (data.resumeUrl) {
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = data.resumeUrl;
-        link.download = 'Aathees_Resume.pdf';
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Open PDF in new tab (browser will handle download option)
+        window.open(data.resumeUrl, '_blank', 'noopener,noreferrer');
       } else {
         console.error("Resume URL not found");
         alert("Resume not available at the moment");
@@ -53,6 +58,18 @@ function Profile() {
       alert("Failed to download resume. Please try again.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleExploreClick = () => {
+    // Smooth scroll to projects section (adjust selector as needed)
+    const projectsSection = document.getElementById('projects') || 
+                            document.querySelector('.projects-section');
+    if (projectsSection) {
+      projectsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Fallback: scroll down by viewport height
+      window.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
     }
   };
 
@@ -82,7 +99,9 @@ function Profile() {
         </p>
 
         <div className="buttons">
-          <button className="explore-btn">🚀 Explore My Universe</button>
+          <button className="explore-btn" onClick={handleExploreClick}>
+            🚀 Explore My Universe
+          </button>
           <button 
             className="cv-btn" 
             onClick={handleDownloadResume}
@@ -101,6 +120,15 @@ function Profile() {
           </a>
           <a href="https://www.instagram.com/aathees111/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
             <FaSquareInstagram />
+          </a>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp"
+            className="whatsapp"
+          >
+            <FaWhatsapp />
           </a>
         </div>
       </div>

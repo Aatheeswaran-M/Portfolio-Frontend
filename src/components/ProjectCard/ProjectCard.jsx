@@ -4,10 +4,16 @@ import { motion as Motion } from "framer-motion";
 
 const ProjectCard = () => {
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    setLoading(true);
     fetch("https://portfolio-api-jie5.onrender.com/api/projects")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then((data) => {
         if (Array.isArray(data)) {
           const uniqueProjects = data.filter(
@@ -18,48 +24,59 @@ const ProjectCard = () => {
         } else {
           setProjects([]);
         }
+        setLoading(false);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
 
   return (
-    <div className="projects-wrapper">
+    <div className="projects-wrapper" id="projects">
       <Motion.h2
-        initial={{ opacity: 0, scale: 0 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.5 }}
+        initial={{ opacity: 0, y: -50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
       >
         🚀 My Projects
       </Motion.h2>
 
-      <Motion.div className="underlineP"></Motion.div>
-
       <Motion.div
-        className="projects-grid"
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.15 }}
-      >
-        {projects.length === 0 ? (
+        className="underlineP"
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+        viewport={{ once: true }}
+      />
+
+      <div className="projects-grid">
+        {loading ? (
           <div className="loading">Loading projects...</div>
+        ) : error ? (
+          <div className="error">Error: {error}</div>
+        ) : projects.length === 0 ? (
+          <div className="no-projects">No projects found</div>
         ) : (
           projects.map((p, idx) => (
             <Motion.article
               key={p._id ?? idx}
               className="project-card"
-
-              // 👇 FINAL LEFT-SIDE ANIMATION
-              initial={{ x: -120, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              viewport={{ once: true, amount: 0.4 }}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              viewport={{ once: true, amount: 0.2 }}
             >
               <div
                 className="thumbnail"
                 style={{
-                  backgroundImage: `url(${p.thumbnail || ""})`,
+                  backgroundImage: p.thumbnail ? `url(${p.thumbnail})` : "none",
                 }}
-              />
+              >
+                {!p.thumbnail && <div className="no-image">📸</div>}
+              </div>
               <div className="card-body">
                 <h3 className="title">{p.title || "Untitled Project"}</h3>
                 <p className="description">
@@ -67,7 +84,7 @@ const ProjectCard = () => {
                 </p>
               </div>
               <div className="card-meta">
-                {p.technologies && (
+                {p.technologies && p.technologies.length > 0 && (
                   <span className="tech">🧩 {p.technologies.join(", ")}</span>
                 )}
                 <div className="card-actions">
@@ -96,7 +113,7 @@ const ProjectCard = () => {
             </Motion.article>
           ))
         )}
-      </Motion.div>
+      </div>
     </div>
   );
 };
