@@ -28,18 +28,6 @@ const Experience = () => {
         "Improved frontend problem-solving and debugging skills."
       ],
       skills: ["HTML", "CSS", "JavaScript", "React", "Responsive Design"],
-    },
-    {
-      role: "Personal Project Developer",
-      company: "Independent",
-      date: "2023 - 2025",
-      tasks: [
-        "Developed MERN projects including LinkedIn Scraper, Telemedicine App, and Malware Scanner.",
-        "Implemented backend APIs using Express.js and MongoDB.",
-        "Designed dashboards, authentication, and data visualizations.",
-        "Strengthened full-stack development, API integration, and real-world problem solving."
-      ],
-      skills: ["React", "Node.js", "Express", "MongoDB", "APIs", "Full Stack"],
     }
   ];
 
