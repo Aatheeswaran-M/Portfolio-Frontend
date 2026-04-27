@@ -11,9 +11,9 @@ const itemClass = 'rounded-xl border border-slate-700/90 bg-slate-900/85 p-3 spa
 const secondaryButtonClass =
   'w-full rounded-lg border border-slate-600 px-4 py-2 text-center text-sm font-medium text-slate-200 transition-colors hover:border-slate-400 sm:w-auto'
 const primaryButtonClass =
-  'w-full rounded-lg bg-sky-500 px-4 py-2 text-center text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 sm:w-auto'
+  'w-full rounded-lg bg-sky-500 px-4 py-2 text-center text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'
 const dangerButtonClass =
-  'w-full rounded-lg border border-rose-500 px-4 py-2 text-center text-sm font-medium text-rose-300 transition-colors hover:bg-rose-500/10 sm:w-auto'
+  'w-full rounded-lg border border-rose-500 px-4 py-2 text-center text-sm font-medium text-rose-300 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'
 
 const quickNavItems = [
   { id: 'admin-hero', label: 'Hero' },
@@ -58,10 +58,24 @@ const readFileAsDataUrl = (file) =>
 const cloneData = (value) => JSON.parse(JSON.stringify(value))
 
 const AdminDashboard = () => {
-  const { content, setContent, resetContent, defaultContent } = usePortfolioData()
+  const { content, saveContent, defaultContent, isCloudEnabled, isSyncing, syncError, lastSyncedAt } =
+    usePortfolioData()
   const [draft, setDraft] = useState(() => cloneData(content))
   const [statusMessage, setStatusMessage] = useState('')
   const hasUnsavedChanges = useMemo(() => JSON.stringify(draft) !== JSON.stringify(content), [draft, content])
+  const lastSyncedLabel = useMemo(() => {
+    if (!lastSyncedAt) {
+      return ''
+    }
+
+    const parsedDate = new Date(lastSyncedAt)
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return ''
+    }
+
+    return parsedDate.toLocaleString()
+  }, [lastSyncedAt])
 
   const setSectionField = (section, field, value) => {
     setDraft((previous) => ({
@@ -294,12 +308,23 @@ const AdminDashboard = () => {
     }
   }
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     const clonedDraft = cloneData(draft)
+    const result = await saveContent(clonedDraft)
 
-    setContent(clonedDraft)
     setDraft(clonedDraft)
-    setStatusMessage('Dashboard content saved. Portfolio is updated instantly.')
+
+    if (result.persistedToCloud) {
+      setStatusMessage('Dashboard content saved to Supabase successfully.')
+      return
+    }
+
+    if (result.ok) {
+      setStatusMessage(result.message)
+      return
+    }
+
+    setStatusMessage(`Saved locally, but cloud sync failed: ${result.message}`)
   }
 
   const discardDraft = () => {
@@ -307,14 +332,27 @@ const AdminDashboard = () => {
     setStatusMessage('Unsaved changes were discarded.')
   }
 
-  const resetToDefault = () => {
+  const resetToDefault = async () => {
     if (!window.confirm('Reset all portfolio content to default values?')) {
       return
     }
 
-    resetContent()
-    setDraft(cloneData(defaultContent))
-    setStatusMessage('Portfolio content reset to default values.')
+    const defaults = cloneData(defaultContent)
+    setDraft(defaults)
+
+    const result = await saveContent(defaults)
+
+    if (result.persistedToCloud) {
+      setStatusMessage('Portfolio content reset and synced to Supabase.')
+      return
+    }
+
+    if (result.ok) {
+      setStatusMessage('Portfolio content reset locally. Configure Supabase to sync online.')
+      return
+    }
+
+    setStatusMessage(`Portfolio reset locally, but cloud sync failed: ${result.message}`)
   }
 
   return (
@@ -347,6 +385,7 @@ const AdminDashboard = () => {
                 type="button"
                 onClick={discardDraft}
                 className={secondaryButtonClass}
+                disabled={isSyncing}
               >
                 Discard Draft
               </button>
@@ -354,13 +393,15 @@ const AdminDashboard = () => {
                 type="button"
                 onClick={saveChanges}
                 className={primaryButtonClass}
+                disabled={isSyncing}
               >
-                Save Changes
+                {isSyncing ? 'Saving...' : 'Save Changes'}
               </button>
               <button
                 type="button"
                 onClick={resetToDefault}
                 className={dangerButtonClass}
+                disabled={isSyncing}
               >
                 Reset All
               </button>
@@ -384,6 +425,12 @@ const AdminDashboard = () => {
           {statusMessage && (
             <p className="mt-4 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-300">
               {statusMessage}
+            </p>
+          )}
+
+          {syncError && (
+            <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+              Cloud sync warning: {syncError}
             </p>
           )}
         </header>
@@ -1418,7 +1465,11 @@ const AdminDashboard = () => {
         </section>
 
         <footer className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-400 sm:p-5">
-          Changes are stored in browser localStorage. To make this data shared across devices, connect this dashboard to a backend API.
+          {isCloudEnabled
+            ? lastSyncedLabel
+              ? `Cloud sync is enabled. Last successful cloud sync: ${lastSyncedLabel}.`
+              : 'Cloud sync is enabled. Click Save Changes to store updates online.'
+            : 'Cloud sync is disabled. Add Supabase environment keys to store updates online.'}
         </footer>
       </div>
     </div>

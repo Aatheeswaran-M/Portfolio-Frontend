@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { defaultPortfolioData } from '../data/defaultPortfolioData'
+import { isSupabaseConfigured, supabase, supabaseConfig } from '../lib/supabaseClient'
 
 const STORAGE_KEY = 'portfolio-admin-content-v2'
 const PortfolioDataContext = createContext(undefined)
@@ -98,46 +99,193 @@ const normalizeData = (value) => {
   }
 }
 
+const readLocalContent = () => {
+  if (typeof window === 'undefined') {
+    return cloneDefaultData()
+  }
+
+  const savedContent = window.localStorage.getItem(STORAGE_KEY)
+
+  if (!savedContent) {
+    return cloneDefaultData()
+  }
+
+  try {
+    return normalizeData(JSON.parse(savedContent))
+  } catch (error) {
+    console.error('Failed to parse saved portfolio content, using defaults.', error)
+    return cloneDefaultData()
+  }
+}
+
+const writeLocalContent = (value) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+}
+
+const getCloudErrorMessage = (error) => {
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message
+  }
+
+  return 'Unknown cloud sync error.'
+}
+
 export const PortfolioDataProvider = ({ children }) => {
-  const [content, setContent] = useState(() => {
-    if (typeof window === 'undefined') {
-      return cloneDefaultData()
-    }
-
-    const savedContent = window.localStorage.getItem(STORAGE_KEY)
-
-    if (!savedContent) {
-      return cloneDefaultData()
-    }
-
-    try {
-      return normalizeData(JSON.parse(savedContent))
-    } catch (error) {
-      console.error('Failed to parse saved portfolio content, using defaults.', error)
-      return cloneDefaultData()
-    }
-  })
+  const [content, setContentState] = useState(() => readLocalContent())
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncError, setSyncError] = useState('')
+  const [lastSyncedAt, setLastSyncedAt] = useState('')
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(content))
+    writeLocalContent(content)
   }, [content])
 
-  const resetContent = () => {
-    setContent(cloneDefaultData())
+  useEffect(() => {
+    let isMounted = true
+
+    const loadFromCloud = async () => {
+      if (!supabase) {
+        return
+      }
+
+      setIsSyncing(true)
+
+      try {
+        const { data, error } = await supabase
+          .from(supabaseConfig.table)
+          .select('content')
+          .eq('id', supabaseConfig.rowId)
+          .maybeSingle()
+
+        if (error) {
+          throw error
+        }
+
+        if (!isMounted || !data?.content) {
+          return
+        }
+
+        const normalized = normalizeData(data.content)
+        setContentState(normalized)
+        setSyncError('')
+        setLastSyncedAt(new Date().toISOString())
+      } catch (error) {
+        if (!isMounted) {
+          return
+        }
+
+        const message = getCloudErrorMessage(error)
+        setSyncError(message)
+        console.error('Cloud load failed. Falling back to local content.', error)
+      } finally {
+        if (isMounted) {
+          setIsSyncing(false)
+        }
+      }
+    }
+
+    loadFromCloud()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const setContent = (updater) => {
+    setContentState((previous) => {
+      const nextValue = typeof updater === 'function' ? updater(previous) : updater
+      return normalizeData(nextValue)
+    })
+  }
+
+  const saveContent = async (nextValue) => {
+    const normalized = normalizeData(nextValue)
+    setContentState(normalized)
+
+    if (!supabase) {
+      return {
+        ok: true,
+        persistedToCloud: false,
+        message:
+          'Saved locally. Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+      }
+    }
+
+    setIsSyncing(true)
+
+    try {
+      const { error } = await supabase.from(supabaseConfig.table).upsert(
+        {
+          id: supabaseConfig.rowId,
+          content: normalized,
+        },
+        {
+          onConflict: 'id',
+        },
+      )
+
+      if (error) {
+        throw error
+      }
+
+      setSyncError('')
+      setLastSyncedAt(new Date().toISOString())
+
+      return {
+        ok: true,
+        persistedToCloud: true,
+        message: 'Saved successfully to Supabase.',
+      }
+    } catch (error) {
+      const message = getCloudErrorMessage(error)
+      setSyncError(message)
+      console.error('Cloud save failed. Content is still stored locally.', error)
+
+      return {
+        ok: false,
+        persistedToCloud: false,
+        message,
+      }
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const resetContent = async ({ syncToCloud = false } = {}) => {
+    const defaults = cloneDefaultData()
+
+    if (syncToCloud) {
+      return saveContent(defaults)
+    }
+
+    setContentState(defaults)
+
+    return {
+      ok: true,
+      persistedToCloud: false,
+      message: 'Reset locally.',
+    }
   }
 
   const contextValue = useMemo(
     () => ({
       content,
       setContent,
+      saveContent,
       resetContent,
       defaultContent: defaultPortfolioData,
+      isCloudEnabled: isSupabaseConfigured,
+      isSyncing,
+      syncError,
+      lastSyncedAt,
+      cloudTable: supabaseConfig.table,
+      cloudRowId: supabaseConfig.rowId,
     }),
-    [content],
+    [content, isSyncing, lastSyncedAt, resetContent, saveContent, setContent, syncError],
   )
 
   return (
