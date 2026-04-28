@@ -1,8 +1,29 @@
 import { supabase } from './supabaseClient'
 
-const cloudinaryCloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.trim()
-const cloudinaryUploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim()
-const supabaseMediaBucket = import.meta.env.VITE_SUPABASE_MEDIA_BUCKET?.trim()
+const readEnvValue = (...keys) => {
+  for (const key of keys) {
+    const value = import.meta.env[key]
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return ''
+}
+
+const cloudinaryCloudName = readEnvValue(
+  'VITE_CLOUDINARY_CLOUD_NAME',
+  'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
+)
+const cloudinaryUploadPreset = readEnvValue(
+  'VITE_CLOUDINARY_UPLOAD_PRESET',
+  'NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET',
+)
+const supabaseMediaBucket = readEnvValue(
+  'VITE_SUPABASE_MEDIA_BUCKET',
+  'NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET',
+)
 
 export const isCloudinaryConfigured = Boolean(cloudinaryCloudName && cloudinaryUploadPreset)
 export const isSupabaseStorageConfigured = Boolean(supabase && supabaseMediaBucket)

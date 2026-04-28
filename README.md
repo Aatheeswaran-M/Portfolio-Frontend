@@ -32,9 +32,11 @@ The admin dashboard now saves content to Supabase so updates persist online acro
 
 1. Add these environment variables (locally and in your Vercel project settings):
 	 - `VITE_SUPABASE_URL`
-	 - `VITE_SUPABASE_ANON_KEY`
+	 - `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY`
 	 - `VITE_SUPABASE_CONTENT_TABLE` (default: `portfolio_content`)
 	 - `VITE_SUPABASE_CONTENT_ROW_ID` (default: `portfolio-main`)
+
+This Vite app also accepts `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` if you are reusing values from a Next.js setup.
 
 2. Create the table in Supabase SQL editor:
 

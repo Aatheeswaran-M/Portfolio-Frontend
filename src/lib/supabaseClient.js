@@ -1,10 +1,31 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+const readEnvValue = (...keys) => {
+  for (const key of keys) {
+    const value = import.meta.env[key]
 
-const contentTable = import.meta.env.VITE_SUPABASE_CONTENT_TABLE || 'portfolio_content'
-const contentRowId = import.meta.env.VITE_SUPABASE_CONTENT_ROW_ID || 'portfolio-main'
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return ''
+}
+
+const supabaseUrl = readEnvValue('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL')
+const supabaseAnonKey = readEnvValue(
+  'VITE_SUPABASE_ANON_KEY',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+)
+
+const contentTable =
+  readEnvValue('VITE_SUPABASE_CONTENT_TABLE', 'NEXT_PUBLIC_SUPABASE_CONTENT_TABLE') ||
+  'portfolio_content'
+const contentRowId =
+  readEnvValue('VITE_SUPABASE_CONTENT_ROW_ID', 'NEXT_PUBLIC_SUPABASE_CONTENT_ROW_ID') ||
+  'portfolio-main'
 const supabaseHost = (() => {
   if (!supabaseUrl) {
     return ''
