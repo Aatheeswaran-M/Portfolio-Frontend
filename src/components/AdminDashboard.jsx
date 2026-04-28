@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { usePortfolioData } from '../context/PortfolioDataContext'
+import { isCloudinaryConfigured, isRemoteMediaUploadConfigured, uploadMediaFile } from '../lib/mediaUpload'
 
 const inputClass =
   'w-full rounded-lg border border-slate-700 bg-slate-900/95 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-sky-500'
@@ -249,9 +250,23 @@ const AdminDashboard = () => {
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file)
-      updateListItem(section, 'items', index, 'thumbnail', dataUrl)
-      setStatusMessage(`Thumbnail uploaded for ${section.slice(0, -1)} ${index + 1}.`)
+      let thumbnailUrl = ''
+      let uploadSource = 'local storage'
+
+      if (isRemoteMediaUploadConfigured) {
+        const uploadResult = await uploadMediaFile(file, {
+          folder: `portfolio/${section}`,
+        })
+        thumbnailUrl = uploadResult.url
+        uploadSource = uploadResult.provider
+      } else {
+        thumbnailUrl = await readFileAsDataUrl(file)
+      }
+
+      updateListItem(section, 'items', index, 'thumbnail', thumbnailUrl)
+      setStatusMessage(
+        `Thumbnail uploaded for ${section.slice(0, -1)} ${index + 1} via ${uploadSource}.`,
+      )
     } catch (error) {
       setStatusMessage(error.message)
     }
@@ -263,9 +278,21 @@ const AdminDashboard = () => {
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file)
-      setSectionField('hero', 'profileImage', dataUrl)
-      setStatusMessage('Hero profile image uploaded.')
+      let profileImageUrl = ''
+      let uploadSource = 'local storage'
+
+      if (isRemoteMediaUploadConfigured) {
+        const uploadResult = await uploadMediaFile(file, {
+          folder: 'portfolio/hero',
+        })
+        profileImageUrl = uploadResult.url
+        uploadSource = uploadResult.provider
+      } else {
+        profileImageUrl = await readFileAsDataUrl(file)
+      }
+
+      setSectionField('hero', 'profileImage', profileImageUrl)
+      setStatusMessage(`Hero profile image uploaded via ${uploadSource}.`)
     } catch (error) {
       setStatusMessage(error.message)
     }
@@ -287,22 +314,34 @@ const AdminDashboard = () => {
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (!isRemoteMediaUploadConfigured && file.size > 2 * 1024 * 1024) {
       setStatusMessage('Please keep resume file size under 2MB for reliable local storage.')
       return
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file)
+      let resumeUrl = ''
+      let uploadSource = 'local storage'
+
+      if (isRemoteMediaUploadConfigured) {
+        const uploadResult = await uploadMediaFile(file, {
+          folder: 'portfolio/resumes',
+        })
+        resumeUrl = uploadResult.url
+        uploadSource = uploadResult.provider
+      } else {
+        resumeUrl = await readFileAsDataUrl(file)
+      }
+
       setDraft((previous) => ({
         ...previous,
         hero: {
           ...previous.hero,
-          secondaryButtonHref: dataUrl,
+          secondaryButtonHref: resumeUrl,
           resumeFileName: file.name,
         },
       }))
-      setStatusMessage('Resume uploaded. Download Resume button is now linked to this file.')
+      setStatusMessage(`Resume uploaded via ${uploadSource}. Download Resume button is now linked to this file.`)
     } catch (error) {
       setStatusMessage(error.message)
     }
@@ -1470,6 +1509,11 @@ const AdminDashboard = () => {
               ? `Cloud sync is enabled. Last successful cloud sync: ${lastSyncedLabel}.`
               : 'Cloud sync is enabled. Click Save Changes to store updates online.'
             : 'Cloud sync is disabled. Add Supabase environment keys to store updates online.'}
+          <p className="mt-2">
+            {isRemoteMediaUploadConfigured
+              ? `Media uploads are enabled via ${isCloudinaryConfigured ? 'Cloudinary' : 'Supabase Storage'}.`
+              : 'Media uploads are falling back to local data URLs. Add Cloudinary or Supabase Storage settings for hosted files.'}
+          </p>
         </footer>
       </div>
     </div>

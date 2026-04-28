@@ -127,6 +127,14 @@ const writeLocalContent = (value) => {
 }
 
 const getCloudErrorMessage = (error) => {
+  const rawMessage = typeof error?.message === 'string' ? error.message.trim() : ''
+
+  if (/fetch failed|failed to fetch|networkerror/i.test(rawMessage)) {
+    return supabaseConfig.host
+      ? `Could not reach Supabase at ${supabaseConfig.host}. Check VITE_SUPABASE_URL, and make sure the project is active.`
+      : 'Could not reach Supabase. Check VITE_SUPABASE_URL and your network connection.'
+  }
+
   if (typeof error?.message === 'string' && error.message.trim()) {
     return error.message
   }
