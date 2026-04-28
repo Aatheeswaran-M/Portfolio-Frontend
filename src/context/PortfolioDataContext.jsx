@@ -219,7 +219,7 @@ export const PortfolioDataProvider = ({ children }) => {
         ok: true,
         persistedToCloud: false,
         message:
-          'Saved locally. Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+          'Saved locally. Supabase is not configured. Add VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY, then restart the dev server.',
       }
     }
 

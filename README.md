@@ -81,7 +81,7 @@ Profile images, project thumbnails, certificate thumbnails, and uploaded resumes
      - `VITE_CLOUDINARY_UPLOAD_PRESET` (unsigned preset)
    - Supabase Storage:
      - `VITE_SUPABASE_URL`
-     - `VITE_SUPABASE_ANON_KEY`
+     - `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY`
      - `VITE_SUPABASE_MEDIA_BUCKET`
 
 2. If you use Supabase Storage, create a public bucket and allow anonymous uploads according to your security model.
